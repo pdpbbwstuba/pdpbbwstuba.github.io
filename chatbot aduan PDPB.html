@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Layanan Aduan PDPB Bawaslu</title>
+    <!-- Memuat Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Menggunakan font Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Latar belakang yang lebih dinamis */
+            background: #e0f2fe; /* Warna latar belakang umum (light blue) */
+        }
+        /* Container utama dengan shadow yang lebih kuat (Default: Desktop/Tablet) */
+        .chat-container {
+            height: 90vh; 
+            max-height: 750px; 
+            border-radius: 16px;
+            box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.25); /* Shadow yang lebih halus tapi dalam */
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        /* Responsive adjustments for Mobile */
+        @media (max-width: 640px) {
+            .chat-container {
+                width: 100vw;
+                height: 100vh; /* Full screen height on mobile */
+                max-height: none; 
+                border-radius: 0; /* Edge-to-edge on mobile */
+                box-shadow: none; /* No shadow on mobile */
+            }
+            /* Menyesuaikan ukuran font H1 pada mobile */
+            .header-title {
+                font-size: 1.875rem; 
+            }
+            .header-subtitle {
+                font-size: 0.75rem; 
+            }
+        }
+
+        /* Style untuk chat bubble */
+        .chat-bubble {
+            max-width: 85%; 
+            padding: 10px 14px; 
+            border-radius: 20px; /* Sedikit lebih membulat */
+            word-wrap: break-word;
+            /* Bayangan bubble yang lebih nyata untuk kesan 3D */
+            box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.08); /* Shadow yang lebih minimalis */
+        }
+        .chat-bubble-bot {
+            background-color: white; 
+            color: #1f2937;
+            align-self: flex-start;
+            border-bottom-left-radius: 4px; /* Sudut Bot lebih kecil */
+            border: none;
+        }
+        .chat-bubble-user {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 4px; /* Sudut User lebih kecil */
+            text-shadow: none;
+        }
+        /* Animasi fade-in sederhana */
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Styling untuk tombol opsi (lebih besar dan tegas) */
+        .option-button {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            border: 2px solid transparent;
+            font-weight: 600; /* Dibuat Semi-bold */
+            letter-spacing: normal; 
+            text-shadow: none; 
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+        }
+        .option-button:hover {
+            transform: translateY(-2px); /* Efek mengangkat yang lebih halus */
+            box-shadow: 0 8px 15px -5px rgba(0, 0, 0, 0.2); /* Bayangan sedikit lebih tebal */
+        }
+        /* Link Button - Hijau lebih kalem (Emerald) */
+        .link-button {
+             border-color: #059669; /* emerald-600 */
+             color: #059669;
+             background-color: #f0fdf4; /* emerald-50 */
+        }
+        .link-button:hover {
+            background-color: #d1fae5; /* emerald-100 */
+        }
+
+        /* Gaya baru untuk latar belakang chat: Minimalis */
+        .chat-bg-pattern {
+            background-color: #f9fafb; /* gray-50 */
+            background-image: none;
+        }
+
+        /* [PERUBAHAN] Hapus gaya untuk logo di header */
+        .header-logo {
+            display: none; /* Menyembunyikan logo */
+        }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="w-full max-w-lg bg-white flex flex-col chat-container">
+        
+        <!-- Header Chatbot (Gradient Indigo-Ungu Modern) -->
+        <header class="bg-gradient-to-r from-indigo-700 to-purple-600 text-white p-5 shadow-xl flex flex-col items-center justify-center space-y-2 relative overflow-hidden sm:p-6">
+            
+            <!-- Logo Bawaslu (DIHAPUS) -->
+            <!-- <img src="bawaslu tuba.png" alt="Logo Bawaslu" class="header-logo"> -->
+            
+            <div class="text-center relative z-10">
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title">LAYANAN ADUAN PDPB</h1>
+                <p class="text-sm font-medium opacity-90 mt-1 header-subtitle">BAWASLU KABUPATEN TULANG BAWANG</p>
+            </div>
+            <p class="text-xs font-light mt-2 opacity-70 text-center">Jl. Cendana, Menggala Sel., Kec. Menggala, Kab. Tulang Bawang, Lampung 34792</p>
+        </header>
+
+        <!-- Area Pesan (Clean background) - KONTEN UTAMA HANYA INI -->
+        <div id="chat-messages" class="flex-1 p-5 space-y-4 overflow-y-auto flex flex-col chat-bg-pattern">
+            <!-- Pesan & Opsi akan ditambahkan di sini oleh JavaScript -->
+        </div>
+
+        <!-- FOOTER DIHAPUS, karena opsi sudah INLINE -->
+
+    </div>
+
+    <script>
+        // Mengambil elemen DOM
+        const messagesContainer = document.getElementById('chat-messages');
+        
+        // Global variable untuk melacak opsi yang sedang aktif
+        let currentOptionsWrapper = null; 
+
+        // URL Penting 
+        const URL_CEK_DPT = "https://cekdptonline.kpu.go.id/";
+        // Tautan Google Form yang diintegrasikan sesuai permintaan pengguna.
+        const URL_GOOGLE_FORM = "https://docs.google.com/forms/d/1oyTs-xybnTy6Bl2Ba3URwbWqRhJBT9TrZ0A5wGrvcpk"; 
+
+        // Fungsi untuk menambahkan pesan ke chat
+        function addMessage(sender, text, isLink = false) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('chat-bubble', 'fade-in');
+
+            if (sender === 'bot') {
+                bubble.classList.add('chat-bubble-bot');
+                if (isLink) {
+                    bubble.innerHTML = `<a href="${text}" target="_blank" class="text-blue-600 font-medium underline" onclick="return false;">${text}</a>`;
+                } else {
+                    bubble.textContent = text;
+                }
+            } else { // sender === 'user'
+                bubble.classList.add('chat-bubble-user');
+                bubble.textContent = text;
+            }
+            
+            messagesContainer.appendChild(bubble);
+            // Auto-scroll ke pesan terbaru
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Fungsi untuk menampilkan opsi tombol (TAMPILAN INLINE)
+        function showOptions(options) {
+            // 1. Buat wrapper untuk tombol opsi
+            const wrapper = document.createElement('div');
+            // Tambahkan margin-top dan kelas untuk identifikasi dan animasi
+            wrapper.classList.add('flex', 'flex-col', 'space-y-3', 'mt-4', 'w-full', 'fade-in', 'current-options');
+            currentOptionsWrapper = wrapper; // Simpan referensi ke opsi saat ini
+            
+            // Tambahkan pesan pemisah
+            const infoText = document.createElement('p');
+            infoText.classList.add('text-center', 'text-gray-400', 'text-xs', 'font-medium', 'mb-2', 'mt-1');
+            infoText.textContent = 'Pilih opsi untuk melanjutkan';
+            wrapper.appendChild(infoText);
+
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option.text;
+                button.classList.add(
+                    'w-full', 'p-3', 'rounded-xl', 'font-semibold', 
+                    'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-2', 
+                    'option-button', 'text-base' 
+                );
+                
+                // Styling warna (tetap sama)
+                let colorClasses = ['bg-indigo-600', 'text-white', 'hover:bg-indigo-700'];
+                let focusRing = 'focus:ring-indigo-500';
+
+                if (option.styleClass === 'blue-style') { 
+                    colorClasses = ['bg-teal-500', 'text-white', 'hover:bg-teal-600'];
+                    focusRing = 'focus:ring-teal-500';
+                }
+
+                if (option.isLink) {
+                    colorClasses = ['link-button', 'bg-white', 'border-emerald-600', 'text-emerald-600', 'shadow-md'];
+                    focusRing = 'focus:ring-emerald-500'; 
+                }
+                
+                button.classList.add(...colorClasses, focusRing);
+
+                // Tetapkan onclick handler
+                if (option.isLink) {
+                    // Untuk link eksternal, tampilkan pilihan user dan hapus opsi, lalu buka link
+                    button.onclick = () => { 
+                        addMessage('user', option.text); 
+                        if(currentOptionsWrapper) currentOptionsWrapper.remove(); 
+                        window.open(option.value, '_blank'); 
+                        // Tambahkan pesan penutup lanjutan karena link langsung dibuka
+                        setTimeout(() => {
+                             addMessage('bot', "Terima kasih atas laporan Anda! Tim Pengawasan Bawaslu akan segera memproses laporan yang telah Anda kirimkan melalui formulir. Salam Awas!");
+                             // Beri opsi kembali ke menu utama
+                             showOptions([
+                                { text: "Kembali ke Menu Utama", value: "start_over" }
+                             ]);
+                        }, 1000);
+                    };
+                } else {
+                    // Untuk opsi internal, panggil handler utama
+                    button.onclick = () => handleOptionClick(option.value, option.text);
+                }
+
+                wrapper.appendChild(button);
+            });
+            
+            messagesContainer.appendChild(wrapper);
+            // Auto-scroll ke pesan terbaru
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Logika utama alur chatbot
+        function handleOptionClick(value, text) {
+            // 1. Hapus Opsi yang baru saja diklik
+            if (currentOptionsWrapper) {
+                currentOptionsWrapper.remove();
+                currentOptionsWrapper = null;
+            }
+
+            // 2. Tampilkan pilihan pengguna sebagai pesan
+            if (value !== 'start' && value !== 'start_over' && value !== 'cek_dulu' && value !== 'edukasi_menu') {
+                addMessage('user', text);
+            }
+
+            // 3. Tampilkan Loading Indicator (INLINE)
+            const loadingMessage = document.createElement('p');
+            loadingMessage.classList.add('text-center', 'text-indigo-500', 'font-medium', 'animate-pulse', 'mt-4');
+            loadingMessage.textContent = 'Memuat respon dari Bawaslu...';
+            messagesContainer.appendChild(loadingMessage);
+            // Perbaikan: Mengganti messagesMessage dengan messagesContainer untuk scroll otomatis.
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+
+            // Tunda respon bot agar terlihat alami
+            setTimeout(() => {
+                // 4. Hapus loading message sebelum menampilkan respon bot
+                loadingMessage.remove(); 
+
+                switch (value) {
+                    case 'start':
+                    case 'start_over':
+                        addMessage('bot', "Salam hormat, Bapak/Ibu. Selamat datang di Layanan Aduan Pemutakhiran Data Pemilih Berkelanjutan (PDPB) Bawaslu Kabupaten Tulang Bawang. Kami sebagai Pelayan Publik yang siap melayani Anda.");
+                        addMessage('bot', "Apakah ada yang bisa kami bantu terkait dugaan permasalahan data pemilih?");
+                        showOptions([
+                            { text: "Ya, saya ingin MELAPOR/MENGADU", value: "mulai_aduan" },
+                            { text: "Edukasi & Sosialisasi PDPB", value: "edukasi_menu", styleClass: "blue-style" }
+                        ]);
+                        break;
+
+                    case 'edukasi_menu':
+                        addMessage('bot', "Selamat datang di Pusat Informasi PDPB Bawaslu. Silakan pilih topik yang ingin Anda ketahui lebih lanjut sebagai bentuk sosialisasi dan edukasi:");
+                        showOptions([
+                            { text: "Apa itu PDPB?", value: "apa_itu_pdpb", styleClass: "blue-style" },
+                            { text: "Dasar Hukum Pengawasan", value: "dasar_hukum", styleClass: "blue-style" },
+                            { text: "Jenis Perubahan Data Pemilih (PKPU 1/2025)", value: "jenis_perubahan_data", styleClass: "blue-style" }, 
+                            { text: "Pentingnya Partisipasi Masyarakat", value: "peran_masyarakat", styleClass: "blue-style" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" }
+                        ]);
+                        break;
+                    
+                    case 'apa_itu_pdpb':
+                        addMessage('bot', "Pemutakhiran Data Pemilih Berkelanjutan (PDPB) adalah upaya proaktif dan berkelanjutan oleh KPU untuk menjaga Daftar Pemilih Tetap (DPT) agar selalu akurat dan mutakhir.");
+                        addMessage('bot', "Tujuan utama PDPB adalah memastikan bahwa setiap Warga Negara Indonesia yang memenuhi syarat memiliki hak suara dan terdaftar dengan benar, serta menghilangkan data pemilih yang Tidak Memenuhi Syarat (TMS).");
+                        addMessage('bot', "Proses ini dilakukan secara terus-menerus (berkelanjutan) di luar masa tahapan Pemilu, dengan melibatkan koordinasi antara KPU dan instansi pemerintah terkait (seperti Dukcapil).");
+                        addMessage('bot', "Bawaslu bertugas mengawasi setiap tahapan proses PDPB ini untuk menjamin terpenuhinya prinsip akurat, komprehensif, dan transparan sesuai regulasi.");
+                        showOptions([
+                            { text: "Pelajari Topik Lain", value: "edukasi_menu", styleClass: "blue-style" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" }
+                        ]);
+                        break;
+                    
+                    case 'dasar_hukum':
+                        addMessage('bot', "Tugas pengawasan PDPB Bawaslu didasarkan pada Undang-Undang Nomor 7 Tahun 2017 tentang Pemilihan Umum. Regulasi pelaksana utamanya adalah **Peraturan KPU (PKPU) Nomor 1 Tahun 2025** tentang Pemutakhiran Data Pemilih Berkelanjutan.");
+                        addMessage('bot', "Kami mengawasi proses pemutakhiran data oleh KPU untuk memastikan prinsip akurat, komprehensif, dan mutakhir terpenuhi sesuai amanat regulasi tersebut.");
+                        showOptions([
+                            { text: "Pelajari Topik Lain", value: "edukasi_menu", styleClass: "blue-style" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" }
+                        ]);
+                        break;
+
+                    case 'jenis_perubahan_data':
+                        addMessage('bot', "Pengawasan data pemilih di Bawaslu berpedoman pada PKPU No. 1 Tahun 2025. Perubahan data dikelompokkan menjadi dua jenis utama yang harus dimutakhirkan KPU:");
+                        addMessage('bot', "1. Kategori Pemilih Baru (Penambahan Data): Pencatatan dilakukan terhadap Warga Negara Indonesia (WNI) yang belum terdaftar dan telah memenuhi syarat, seperti: Baru mencapai usia 17 tahun, Pindah Masuk (Daftar Pindah), atau beralih dari status TNI/Polri menjadi sipil (Pensiunan).");
+                        addMessage('bot', "2. Kategori Pemilih Tidak Memenuhi Syarat (Pengurangan Data): Pengurangan data dilakukan untuk pemilih yang tidak lagi memenuhi syarat, meliputi: Meninggal dunia, Ganda, Pindah Keluar, Tidak Dikenal, atau beralih status dari sipil menjadi TNI/Polri.");
+                        addMessage('bot', "Setiap laporan aduan masyarakat akan diverifikasi berdasarkan kategori perubahan data ini untuk memastikan integritas Daftar Pemilih.");
+                        showOptions([
+                            { text: "Pelajari Topik Lain", value: "edukasi_menu", styleClass: "blue-style" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" }
+                        ]);
+                        break;
+
+                    case 'peran_masyarakat':
+                        addMessage('bot', "Peran masyarakat sangat krusial! Pengawasan partisipatif, di mana Anda ikut serta melaporkan jika ada data pemilih yang tidak sesuai (pemilih meninggal, pindah domisili, atau belum terdaftar), adalah kunci keberhasilan PDPB.");
+                        addMessage('bot', "Jika Anda menemukan ketidaksesuaian, silakan gunakan opsi 'Ya, saya ingin MELAPOR/MENGADU' di menu utama.");
+                        showOptions([
+                            { text: "Pelajari Topik Lain", value: "edukasi_menu", styleClass: "blue-style" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" }
+                        ]);
+                        break;
+
+
+                    case 'mulai_aduan':
+                        addMessage('bot', "Terima kasih atas kepedulian Bapak/Ibu. Kami siap menindaklanjuti. Aduan ini mencakup data tidak sesuai, belum terdaftar, atau pemilih yang seharusnya sudah Tidak Memenuhi Syarat (TMS).");
+                        addMessage('bot', "Langkah kritis yang pertama, mohon verifikasi data Anda melalui situs resmi KPU.");
+                        showOptions([
+                            { text: "1. Kunjungi Cek DPT Online KPU", value: URL_CEK_DPT, isLink: true },
+                            // Opsi ini kini menggunakan tautan Google Form yang baru
+                            { text: "2. Buka Formulir Aduan Resmi Bawaslu (Google Form)", value: URL_GOOGLE_FORM, isLink: true },
+                            { text: "Saya akan periksa data saya sekarang", value: "cek_dulu" },
+                            { text: "Kembali ke Menu Utama", value: "start_over" } 
+                        ]);
+                        break;
+                    
+                    case 'cek_dulu':
+                        addMessage('bot', "Sangat tepat, Bapak/Ibu. Memastikan status data adalah hal yang utama. Silakan gunakan link Cek DPT Online di bawah ini. Kami menunggu Anda kembali.");
+                        showOptions([
+                            { text: "1. Kunjungi Cek DPT Online KPU", value: URL_CEK_DPT, isLink: true },
+                            // Opsi ini kini menggunakan tautan Google Form yang baru
+                            { text: "2. Buka Formulir Aduan Resmi Bawaslu (Google Form)", value: URL_GOOGLE_FORM, isLink: true },
+                            { text: "Kembali ke Menu Utama", value: "start_over" } 
+                        ]);
+                        break;
+
+                    case 'lanjut_form':
+                        // Case ini dihapus karena tautan sudah langsung ke Formulir Aduan.
+                        addMessage('bot', "Operasi tidak valid. Kembali ke menu utama.");
+                        handleOptionClick('start_over', '');
+                        break;
+
+                    case 'akhiri_chat':
+                        addMessage('bot', "Operasi tidak valid. Kembali ke menu utama.");
+                        handleOptionClick('start_over', '');
+                        break;
+                }
+            }, 800); // Penundaan 0.8 detik
+        }
+
+        // Memulai chatbot saat halaman dimuat
+        window.onload = () => {
+            setTimeout(() => {
+                handleOptionClick('start', '');
+            }, 500);
+        };
+    </script>
+
+</body>
+</html>
